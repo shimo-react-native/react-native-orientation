@@ -5,11 +5,16 @@
 #import "Orientation.h"
 #if __has_include(<React/RCTEventDispatcher.h>)
 #import <React/RCTEventDispatcher.h>
+#import <React/RCTUtils.h>
 #else
 #import "RCTEventDispatcher.h"
+#import "RCTUtils.h"
 #endif
 
-@implementation Orientation
+@implementation Orientation {
+  UIInterfaceOrientation _statusBarOrientation;
+}
+
 @synthesize bridge = _bridge;
 
 static UIInterfaceOrientationMask _orientation = UIInterfaceOrientationMaskAllButUpsideDown;
@@ -23,6 +28,9 @@ static UIInterfaceOrientationMask _orientation = UIInterfaceOrientationMaskAllBu
 - (instancetype)init
 {
   if ((self = [super init])) {
+    RCTExecuteOnMainQueue(^{
+      _statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
+    });
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationDidChanged:) name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
   }
   return self;
@@ -41,11 +49,19 @@ static UIInterfaceOrientationMask _orientation = UIInterfaceOrientationMaskAllBu
 
 - (void)orientationDidChanged:(NSNotification *)notification
 {
+  __weak typeof(self) weakSelf = self;
+  RCTExecuteOnMainQueue(^{
+    [weakSelf  orientationDidChanged];
+  });
+}
+
+- (void)orientationDidChanged
+{
+  _statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
   [self.bridge.eventDispatcher sendDeviceEventWithName:@"specificOrientationDidChange"
-                                                  body:@{@"specificOrientation": [self getSpecificOrientationStr:UIDeviceOrientationUnknown]}];
-  
+                                                  body:@{@"specificOrientation": [self getSpecificOrientationStr:_statusBarOrientation]}];
   [self.bridge.eventDispatcher sendDeviceEventWithName:@"orientationDidChange"
-                                                  body:@{@"orientation": [self getOrientationStr:UIDeviceOrientationUnknown]}];
+                                                  body:@{@"orientation": [self getOrientationStr:_statusBarOrientation]}];
 }
 
 - (NSString *)getOrientationStr: (UIDeviceOrientation)orientation {
@@ -66,7 +82,7 @@ static UIInterfaceOrientationMask _orientation = UIInterfaceOrientationMaskAllBu
 
     default:
       // orientation is unknown, we try to get the status bar orientation
-      switch ([[UIApplication sharedApplication] statusBarOrientation]) {
+      switch (_statusBarOrientation) {
         case UIInterfaceOrientationPortrait:
           orientationStr = @"PORTRAIT";
           break;
@@ -110,7 +126,7 @@ static UIInterfaceOrientationMask _orientation = UIInterfaceOrientationMaskAllBu
 
     default:
       // orientation is unknown, we try to get the status bar orientation
-      switch ([[UIApplication sharedApplication] statusBarOrientation]) {
+      switch (_statusBarOrientation) {
         case UIInterfaceOrientationPortrait:
           orientationStr = @"PORTRAIT";
           break;
@@ -192,7 +208,6 @@ RCT_EXPORT_METHOD(lockToLandscapeLeft)
         [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
         [[UIDevice currentDevice] setValue:[NSNumber numberWithInteger: UIInterfaceOrientationLandscapeLeft] forKey:@"orientation"];
     }];
-
 }
 
 RCT_EXPORT_METHOD(lockToLandscapeRight)
@@ -215,8 +230,6 @@ RCT_EXPORT_METHOD(unlockAllOrientations)
     NSLog(@"Unlock All Orientations");
   #endif
   [Orientation setOrientation:UIInterfaceOrientationMaskAllButUpsideDown];
-//  AppDelegate *delegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-//  delegate.orientation = 3;
 }
 
 - (NSDictionary *)constantsToExport
