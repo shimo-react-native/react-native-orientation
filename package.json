@@ -1,6 +1,6 @@
 {
-  "name": "react-native-orientation",
-  "version": "3.1.3",
+  "name": "@shimo/react-native-orientation",
+  "version": "3.1.3-shimo.1",
   "description": "Listen to device orientation changes in React Native applications and programmatically set preferred orientations on a per screen basis",
   "main": "index.js",
   "scripts": {
@@ -35,5 +35,8 @@
   "bugs": {
     "url": "https://github.com/yamill/react-native-orientation/issues"
   },
-  "homepage": "https://github.com/yamill/react-native-orientation#readme"
+  "homepage": "https://github.com/yamill/react-native-orientation#readme",
+  "publishConfig": {
+    "registry": "http://registry.npm.shimo.run/"
+  }
 }
